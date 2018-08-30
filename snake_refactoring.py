@@ -10,7 +10,7 @@ screen_height = 800 #Set the screen size
 set_tick = 2 # Set the tick number. Higher equal faster snake.
 X = 30 # Grid size
 Y = 30 # Grid size
-DEBUG = True # debug
+DEBUG = False # debug
 ###---Input End---###
 
 class Snake():
@@ -98,21 +98,30 @@ class Snake():
 
     def calc_future_snake(self, n_X, n_Y):
         self.future_snake = []
-        for i in range(0,len(self.whole)):
-            lowest = 1000
-            future_step = []
+        passed_apple = False
+        future_best_move = []
+        for i in range(0,30):
+            future_best_move = []
             for iter in self.iter_matrix:
                 m_X, m_Y = n_X+iter[0], n_Y+iter[1]
-                if self.check_inbounds(m_X, m_Y) is True and [m_X, m_Y] not in self.whole:
-                    if self.Q_matrix[m_X, m_Y] < lowest:
-                        future_step = [m_X, m_Y]
-                        lowest = self.Q_matrix[m_X, m_Y]
-            self.future_snake.append(future_step)
-            if future_step == self.apple:
-                break
+                if self.check_inbounds(m_X, m_Y) is True and [m_X, m_Y] not in self.whole and [m_X, m_Y] not in self.future_snake:
+                    future_best_move.append([self.Q_matrix[m_X, m_Y], m_X, m_Y])
+            #print(future_best_move)
+            if passed_apple is False:
+                future_best_move = sorted(future_best_move, key=lambda x: x[0])
             else:
-                n_X, n_Y = future_step[0], future_step[1]
-    
+                future_best_move = sorted(future_best_move, key=lambda x: x[0], reverse=True)
+            if future_best_move != []:
+                self.future_snake.append([future_best_move[0][1],future_best_move[0][2]])
+                n_X, n_Y = future_best_move[0][1], future_best_move[0][2]
+            else:
+                #print("Avoid!")
+                #pygame.time.delay(4000)
+                break
+            if [future_best_move[0][1],future_best_move[0][2]] == self.apple:
+                #print("Passed apple set to True")
+                passed_apple = True
+            
     def set_best_move(self):
         '''Gets the best possible move for the snake.'''
         if len(self.best_moves) > 0:
