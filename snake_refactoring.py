@@ -171,7 +171,7 @@ class Snake():
         if self.apple == self.current:
             self.apple_amount += 1
             self.apple = self.get_apple_placement()
-            self.point += 1000
+            self.point += 1
             self.got_apple = True
             self.fitness_since_last_apple = 0
 
