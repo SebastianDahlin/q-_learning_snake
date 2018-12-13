@@ -19,7 +19,7 @@ class Snake():
         self.point = 0
         self.apple_amount = 0
         self.move = [1,0]
-        self.current = [6,2]
+        self.current = [4,4]
         self.iter_matrix = [[1,0],[-1,0],[0,1],[0,-1]]
         self.whole = [[4,4],[3,4],[2,4]]
         self.best_moves = []
@@ -195,7 +195,7 @@ def render(snake):
     pygame.draw.rect(SCREEN, (255, 0, 0),(100+snake.apple[0]*30, 100+snake.apple[1]*20, 30, 20)) # Draw apple
     for i in range(0, X):
         for j in range(0, Y):
-            if DEBUG is True and snake.sub_Q is True: # Display the Q matrix. ONLY DEBUG. MAKES MODEL VERY SLOW!
+            if DEBUG is True and snake.sub_Q is True: # Display the Q matrix. ONLY DEBUG. Can make model slow!
                 if snake.Q_matrix[i, j] == -1:
                     pygame.draw.rect(SCREEN, (180, 180, 100),(100+i*30, 100+j*20, 30, 20))
                 if [i, j] == snake.sub_Q_wayout: # Draw the way out of the sub Q system
@@ -204,8 +204,10 @@ def render(snake):
                 if [i, j] in snake.future_snake and [i, j] != [snake.apple[0], snake.apple[1]]: #Draw the future
                     pygame.draw.rect(SCREEN, (100, 100, 100),(100+i*30, 100+j*20, 30, 20))
             pygame.draw.rect(SCREEN, (255, 255, 255),(100+i*30, 100+j*20, 30, 20),1) #Draw grid
-            if [i,j] in snake.whole: #Draw snake
+            if [i,j] in snake.whole and [i,j] not in snake.current: #Draw snake body
                 pygame.draw.rect(SCREEN, (255, 255, 255),(100+i*30, 100+j*20, 30, 20))
+            if [i,j] == snake.current: #Draw snake head
+                pygame.draw.rect(SCREEN, (34, 139, 34),(100+i*30, 100+j*20, 30, 20))
             
     pygame.display.flip()
 
