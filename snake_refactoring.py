@@ -7,7 +7,7 @@ import math
 ###--- Inputs for the run ---###
 screen_width, screen_height = 1200, 800 #Set the screen size
 set_tick = 2 # Set the tick number. Higher equal faster snake.
-X, Y = 30, 30 # Grid size
+X, Y = 25, 25 # Grid size, must be symmertical.
 DEBUG = False # debug
 ###---Input End---###
 
@@ -25,7 +25,7 @@ class Snake():
         self.best_moves = []
         self.back_up_move = []
         self.got_apple = False
-        self.apple = [8,3] #self.get_apple_placement() 
+        self.apple = [2,2] #self.get_apple_placement() 
         self.fitness = 0
         self.fitness_since_last_apple = 0
         self.Q_matrix = self.new_Q_matrix()
@@ -215,7 +215,7 @@ if __name__ == "__main__": #Main program
     clock.tick(40)
     SCREEN = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption('Snake game') # Set the title of the window
-    for i in range(0,2):
+    for i in range(0,2): # Run X amounts of times
         do_again = True
         snake=Snake(X, Y)
         while do_again is True:
