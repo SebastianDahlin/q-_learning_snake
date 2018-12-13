@@ -5,11 +5,9 @@ import numpy as np
 import math
 
 ###--- Inputs for the run ---###
-screen_width = 1200 #Set the screen size
-screen_height = 800 #Set the screen size
+screen_width, screen_height = 1200, 800 #Set the screen size
 set_tick = 2 # Set the tick number. Higher equal faster snake.
-X = 30 # Grid size
-Y = 30 # Grid size
+X, Y = 30, 30 # Grid size
 DEBUG = False # debug
 ###---Input End---###
 
@@ -21,24 +19,23 @@ class Snake():
         self.point = 0
         self.apple_amount = 0
         self.move = [1,0]
-        self.current = [4,4]
+        self.current = [6,2]
         self.iter_matrix = [[1,0],[-1,0],[0,1],[0,-1]]
-        if DEBUG is True:
-            #self.whole = [[4,4],[3,4],[2,4],[1,4],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[1,8],[2,8],[3,8],[4,8],[5,8],[6,8],[6,7],[6,6],[6,5],[6,4],[6,3],[5,3],[4,3],[3,3],[2,3]]
-            self.whole = [[4,4],[3,4],[2,4]]
-        else:
-            self.whole = [[4,4],[3,4],[2,4]]
+        self.whole = [[4,4],[3,4],[2,4]]
         self.best_moves = []
         self.back_up_move = []
         self.got_apple = False
-        self.apple = [3,15] #self.get_apple_placement() 
+        self.apple = [8,3] #self.get_apple_placement() 
         self.fitness = 0
         self.fitness_since_last_apple = 0
         self.Q_matrix = self.new_Q_matrix()
         self.opt_matrix(self.Q_matrix, self.apple[0], self.apple[1])
         self.sub_Q_wayout = []
         self.escape_routes = 0
-        self.future_snake = []                
+        self.future_snake = []
+        self.future_matrix = self.new_Q_matrix()
+        self.future_room = 0
+        self.warning = False          
 
     def new_Q_matrix(self):
         '''Returns a X*Y 2-dimensional matrix filled with -1s'''
@@ -49,7 +46,7 @@ class Snake():
         self.Q_matrix = self.new_Q_matrix()
         self.opt_matrix(self.Q_matrix, self.apple[0], self.apple[1])
     
-    def opt_matrix(self, matrix, gX, gY, get_longest=False, apple=True):
+    def opt_matrix(self, matrix, gX, gY, get_longest=False, apple=False, future_snake=False):
         '''Gets a relevant matrix and finds steps to [gx, gy]'''
         if apple is True:
             self.escape_routes = 0
@@ -67,16 +64,20 @@ class Snake():
                                 self.sub_Q_wayout = [i[0], i[1]]
                                 longest_snake = self.whole.index([c_X, c_Y])
                         if [c_X,c_Y] not in self.whole and matrix[c_X][c_Y] != 0: # Check that they are not within snake and not within apple
-                            if matrix[c_X][c_Y] == -1: # If the cell is not yet filled out, add a new value to it
+                            if matrix[c_X][c_Y] == -1 and future_snake is False: # If the cell is not yet filled out, add a new value to it
                                 matrix[c_X][c_Y] = matrix[i[0]][i[1]] + 1
                                 if matrix[c_X][c_Y] == 1 and apple is True:
                                     self.escape_routes += 1
+                                new_iterated_list.append([c_X, c_Y])
+                            if matrix[c_X][c_Y] == -1 and future_snake is True and [c_X, c_Y] not in self.future_snake:
+                                matrix[c_X][c_Y] = matrix[i[0]][i[1]] + 1
                                 new_iterated_list.append([c_X, c_Y])
             iterated_list = new_iterated_list
             new_iterated_list = []
 
     def get_possible_moves(self):
         '''Populates self.best_moves and self.back_up_moves.'''
+        self.calc_future_snake()
         self.best_moves, self.back_up_moves = [], [] # Empty best moves and back up moves list
         for iter in self.iter_matrix: # Which move gives the lowest Q matrix cell value
             s_X, s_Y = self.current[0]+iter[0], self.current[1]+iter[1]
@@ -85,8 +86,10 @@ class Snake():
                         self.best_moves.append([iter[0],iter[1],self.Q_matrix[s_X][s_Y]])
                     elif [s_X,s_Y] not in self.whole and self.Q_matrix[s_X][s_Y] == -1:
                         self.back_up_moves.append([iter[0],iter[1]])
-        if self.sub_Q is False:
+        if self.sub_Q is False and self.warning is False:
             self.best_moves = sorted(self.best_moves, key=lambda x: x[2])
+        elif self.warning is True:
+            self.best_moves = sorted(self.best_moves, key=lambda x: x[2], reverse=True)
         else:
             self.best_moves = sorted(self.best_moves, key=lambda x: x[2], reverse=True)
 
@@ -96,9 +99,11 @@ class Snake():
         else:
             return False
 
-    def calc_future_snake(self, n_X, n_Y):
+    def calc_future_snake(self):
+        n_X, n_Y = self.current[0], self.current[1]
         self.future_snake = []
-        passed_apple = False
+        self.future_matrix = self.new_Q_matrix()
+        self.future_room = 0
         future_best_move = []
         for i in range(0,30):
             future_best_move = []
@@ -106,28 +111,30 @@ class Snake():
                 m_X, m_Y = n_X+iter[0], n_Y+iter[1]
                 if self.check_inbounds(m_X, m_Y) is True and [m_X, m_Y] not in self.whole and [m_X, m_Y] not in self.future_snake:
                     future_best_move.append([self.Q_matrix[m_X, m_Y], m_X, m_Y])
-            #print(future_best_move)
-            if passed_apple is False:
-                future_best_move = sorted(future_best_move, key=lambda x: x[0])
-            else:
-                future_best_move = sorted(future_best_move, key=lambda x: x[0], reverse=True)
+            future_best_move = sorted(future_best_move, key=lambda x: x[0])
             if future_best_move != []:
                 self.future_snake.append([future_best_move[0][1],future_best_move[0][2]])
                 n_X, n_Y = future_best_move[0][1], future_best_move[0][2]
+                if [future_best_move[0][1],future_best_move[0][2]] == self.apple:  
+                    self.opt_matrix(self.future_matrix,self.apple[0], self.apple[1], future_snake=True)
+                    for i in range(0,X):
+                        for y in range(0,Y):
+                            if self.future_matrix[i][y] > 0:
+                                self.future_room += 1
+                    #print(self.future_room)
+                    if self.future_room != 0 and self.future_room < 30:
+                        self.warning = True
+                    else:
+                        self.warning = False
+                    break
             else:
-                #print("Avoid!")
-                #pygame.time.delay(4000)
                 break
-            if [future_best_move[0][1],future_best_move[0][2]] == self.apple:
-                #print("Passed apple set to True")
-                passed_apple = True
-            
+              
     def set_best_move(self):
         '''Gets the best possible move for the snake.'''
         if len(self.best_moves) > 0:
             self.sub_Q = False
-            if DEBUG is True:
-                self.calc_future_snake(self.current[0], self.current[1])
+            self.warning = False
             decided_move = [self.best_moves[0][0], self.best_moves[0][1]]
         elif len(self.back_up_moves) > 0:
             self.sub_Q = True
@@ -183,7 +190,7 @@ class Snake():
 def render(snake):
     SCREEN.fill((0, 0, 0))
     myfont = pygame.font.SysFont("monospace", 20)
-    label = myfont.render("No. of esacpe routes: " + str(snake.escape_routes) +" Points: "+ str(snake.point) +" Fitness: " +str(snake.fitness) +"  FSLA:  " + str(snake.fitness_since_last_apple), 1, (255,255,0))
+    label = myfont.render("Warning: " + str(snake.warning) +" Points: "+ str(snake.point) +" Fitness: " +str(snake.fitness) +"  FSLA:  " + str(snake.fitness_since_last_apple), 1, (255,255,0))
     SCREEN.blit(label, (20, 20))
     pygame.draw.rect(SCREEN, (255, 0, 0),(100+snake.apple[0]*30, 100+snake.apple[1]*20, 30, 20)) # Draw apple
     for i in range(0, X):
@@ -194,7 +201,7 @@ def render(snake):
                 if [i, j] == snake.sub_Q_wayout: # Draw the way out of the sub Q system
                     pygame.draw.rect(SCREEN, (50, 50, 220),(100+i*30, 100+j*20, 30, 20))
             if DEBUG is True and snake.sub_Q is False:
-                if [i, j] in snake.future_snake and [i, j] != [snake.apple[0], snake.apple[1]]:
+                if [i, j] in snake.future_snake and [i, j] != [snake.apple[0], snake.apple[1]]: #Draw the future
                     pygame.draw.rect(SCREEN, (100, 100, 100),(100+i*30, 100+j*20, 30, 20))
             pygame.draw.rect(SCREEN, (255, 255, 255),(100+i*30, 100+j*20, 30, 20),1) #Draw grid
             if [i,j] in snake.whole: #Draw snake
@@ -216,7 +223,8 @@ if __name__ == "__main__": #Main program
             for event in pygame.event.get(): # Manual input
                 if event.type == pygame.QUIT:
                     done = True
-            '''
+            ''' 
+            ## For manual input:
                 pygame.event.pump()
                 for i in range(0, 30):
                     keys = pygame.key.get_pressed()
@@ -235,8 +243,8 @@ if __name__ == "__main__": #Main program
             snake.check_apple()
             snake.iterate()
             snake.check_apple()
-            # if DEBUG is True and snake.escape_routes <= 2:
-            #     pygame.time.delay(2000)
+            if DEBUG is True:
+                pass
             snake.update_Q_matrix()
             do_again = snake.check_game_over()
             if do_again is False:
