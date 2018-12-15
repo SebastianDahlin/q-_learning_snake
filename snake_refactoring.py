@@ -7,7 +7,7 @@ import math
 ###--- Inputs for the run ---###
 screen_width, screen_height = 1200, 800 #Set the screen size
 set_tick = 2 # Set the tick number. Higher equal faster snake.
-X, Y = 25, 25 # Grid size, must be symmertical.
+X, Y = 10, 10 # Grid size, must be symmertical.
 DEBUG = False # debug
 ###---Input End---###
 
@@ -25,7 +25,7 @@ class Snake():
         self.best_moves = []
         self.back_up_move = []
         self.got_apple = False
-        self.apple = [2,2] #self.get_apple_placement() 
+        self.apple = [2,2]
         self.fitness = 0
         self.fitness_since_last_apple = 0
         self.Q_matrix = self.new_Q_matrix()
@@ -38,16 +38,16 @@ class Snake():
         self.warning = False          
 
     def new_Q_matrix(self):
-        '''Returns a X*Y 2-dimensional matrix filled with -1s'''
-        return(np.full((X, Y), -1))
+        """Returns a X*Y 2-dimensional matrix filled with -1s"""
+        return(np.full((self.X, self.Y), -1))
 
     def update_Q_matrix(self):
-        '''Creates a new Q matrix and sents it to be optimized'''
+        """Creates a new Q matrix and sents it to be optimized"""
         self.Q_matrix = self.new_Q_matrix()
         self.opt_matrix(self.Q_matrix, self.apple[0], self.apple[1])
     
     def opt_matrix(self, matrix, gX, gY, get_longest=False, apple=False, future_snake=False):
-        '''Gets a relevant matrix and finds steps to [gx, gy]'''
+        """Gets a relevant matrix and finds steps to [gx, gy]"""
         if apple is True:
             self.escape_routes = 0
         matrix[gX][gY] = 0
@@ -76,9 +76,9 @@ class Snake():
             new_iterated_list = []
 
     def get_possible_moves(self):
-        '''Populates self.best_moves and self.back_up_moves.'''
+        """Populates self.best_moves and self.back_up_moves."""
         self.calc_future_snake()
-        self.best_moves, self.back_up_moves = [], [] # Empty best moves and back up moves list
+        self.best_moves, self.back_up_moves = [], [] # Empty best moves and back-up moves list
         for iter in self.iter_matrix: # Which move gives the lowest Q matrix cell value
             s_X, s_Y = self.current[0]+iter[0], self.current[1]+iter[1]
             if self.check_inbounds(s_X, s_Y) is True:
@@ -94,7 +94,8 @@ class Snake():
             self.best_moves = sorted(self.best_moves, key=lambda x: x[2], reverse=True)
 
     def check_inbounds(self, s_X, s_Y):
-        if s_X > -1 and s_X < X and s_Y > -1 and s_Y < Y:
+        """Checks that a cell is not out of bounds and that it's not occupied by the snake"""
+        if s_X > -1 and s_X < self.X and s_Y > -1 and s_Y < self.Y:
             return True
         else:
             return False
@@ -117,8 +118,8 @@ class Snake():
                 n_X, n_Y = future_best_move[0][1], future_best_move[0][2]
                 if [future_best_move[0][1],future_best_move[0][2]] == self.apple:  
                     self.opt_matrix(self.future_matrix,self.apple[0], self.apple[1], future_snake=True)
-                    for i in range(0,X):
-                        for y in range(0,Y):
+                    for i in range(0,self.X):
+                        for y in range(0,self.Y):
                             if self.future_matrix[i][y] > 0:
                                 self.future_room += 1
                     #print(self.future_room)
@@ -131,7 +132,7 @@ class Snake():
                 break
               
     def set_best_move(self):
-        '''Gets the best possible move for the snake.'''
+        """Gets the best possible move for the snake."""
         if len(self.best_moves) > 0:
             self.sub_Q = False
             self.warning = False
@@ -160,8 +161,8 @@ class Snake():
 
     def get_apple_placement(self):
         apple = []
-        for i in range(0, X):
-            for j in range(0, Y):
+        for i in range(0, self.X):
+            for j in range(0, self.Y):
                 apple.append([i,j])
         for place in self.whole:
             apple.remove(place)
@@ -175,10 +176,10 @@ class Snake():
             self.got_apple = True
             self.fitness_since_last_apple = 0
 
-    def check_game_over(self):
-        if self.current[0] > X-1 or self.current[0] < 0:
+    def check_still_alive(self):
+        if self.current[0] > self.X-1 or self.current[0] < 0:
             return(False)
-        elif self.current[1] > Y-1 or self.current[1] < 0:
+        elif self.current[1] > self.Y-1 or self.current[1] < 0:
             return(False)
         elif self.current in self.whole[1:]:
             return(False)
@@ -188,13 +189,14 @@ class Snake():
             return(True)
 
 def render(snake):
+    """Writes the game to the screen"""
     SCREEN.fill((0, 0, 0))
     myfont = pygame.font.SysFont("monospace", 20)
     label = myfont.render("Warning: " + str(snake.warning) +" Points: "+ str(snake.point) +" Fitness: " +str(snake.fitness) +"  FSLA:  " + str(snake.fitness_since_last_apple), 1, (255,255,0))
     SCREEN.blit(label, (20, 20))
     pygame.draw.rect(SCREEN, (255, 0, 0),(100+snake.apple[0]*30, 100+snake.apple[1]*20, 30, 20)) # Draw apple
-    for i in range(0, X):
-        for j in range(0, Y):
+    for i in range(0, snake.X):
+        for j in range(0, snake.Y):
             if DEBUG is True and snake.sub_Q is True: # Display the Q matrix. ONLY DEBUG. Can make model slow!
                 if snake.Q_matrix[i, j] == -1:
                     pygame.draw.rect(SCREEN, (180, 180, 100),(100+i*30, 100+j*20, 30, 20))
@@ -208,7 +210,6 @@ def render(snake):
                 pygame.draw.rect(SCREEN, (255, 255, 255),(100+i*30, 100+j*20, 30, 20))
             if [i,j] == snake.current: #Draw snake head
                 pygame.draw.rect(SCREEN, (34, 139, 34),(100+i*30, 100+j*20, 30, 20))
-            
     pygame.display.flip()
 
 if __name__ == "__main__": #Main program
@@ -218,14 +219,13 @@ if __name__ == "__main__": #Main program
     SCREEN = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption('Snake game') # Set the title of the window
     for i in range(0,2): # Run X amounts of times
-        do_again = True
         snake=Snake(X, Y)
-        while do_again is True:
+        while snake.check_still_alive() is True:
             render(snake)
             for event in pygame.event.get(): # Manual input
                 if event.type == pygame.QUIT:
                     done = True
-            ''' 
+            """ 
             ## For manual input:
                 pygame.event.pump()
                 for i in range(0, 30):
@@ -238,17 +238,12 @@ if __name__ == "__main__": #Main program
                         snake.move = [0,-1]
                     if keys[pygame.K_DOWN] and snake.move[1] == 0:
                         snake.move = [0,1]
-            '''
-            
+            """
             snake.get_possible_moves()
             snake.move = snake.set_best_move()
             snake.check_apple()
             snake.iterate()
             snake.check_apple()
-            if DEBUG is True:
-                pass
             snake.update_Q_matrix()
-            do_again = snake.check_game_over()
-            if do_again is False:
-                pygame.time.delay(1000)
+        pygame.time.delay(1000)
         print("Game over. Score: " + str(snake.point))
